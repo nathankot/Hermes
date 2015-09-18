@@ -123,7 +123,7 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
     
   }
   
-  func show(view: UIView = (UIApplication.sharedApplication().windows[0] as? UIView)!, animated: Bool = true) {
+  func show(view: UIView = UIApplication.sharedApplication().windows[0], animated: Bool = true) {
     // Add to main queue in case the view loaded but wasn't added to the window yet.  This seems to happen in my storyboard test app
     dispatch_async(dispatch_get_main_queue(),{
       view.addSubview(self)
