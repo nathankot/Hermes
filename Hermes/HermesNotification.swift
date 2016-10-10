@@ -1,14 +1,14 @@
 import UIKit
 
 protocol HermesNotificationDelegate: class {
-    func notificationDidChangeAutoClose(notification: HermesNotification)
+    func notificationDidChangeAutoClose(_ notification: HermesNotification)
 }
 
-public class HermesNotification: NSObject {
+open class HermesNotification: NSObject {
   weak var delegate: HermesNotificationDelegate?
   
   /// The text of the notification
-  public var text: String? {
+  open var text: String? {
     set(text) {
       if (text != nil) {
         attributedText = NSAttributedString(string: text!)
@@ -22,26 +22,26 @@ public class HermesNotification: NSObject {
   }
   
   /// Text, but with fancy attributes instead of a regular `String`
-  public var attributedText: NSAttributedString?
+  open var attributedText: NSAttributedString?
   
   /// The color of the bottom bar on the notification
-  public var color: UIColor?
+  open var color: UIColor?
   
   /// The image to be displayed along with the notification
-  public var image: UIImage?
+  open var image: UIImage?
   
   /// The URL to the image
-  public var imageURL: NSURL?
-  public var tag: String?
+  open var imageURL: URL?
+  open var tag: String?
   
   /// The path to the sound to be played along with the notification
-  public var soundPath: String?
+  open var soundPath: String?
   
   /// The code that should be executed when the notification is tapped on
-  public var action: ((HermesNotification) -> Void)? = nil
+  open var action: ((HermesNotification) -> Void)? = nil
   
   /// Should the notification close automatically?
-  public var autoClose = true {
+  open var autoClose = true {
     didSet {
       if oldValue != autoClose {
         delegate?.notificationDidChangeAutoClose(self)
@@ -50,10 +50,10 @@ public class HermesNotification: NSObject {
   }
   
   /// The time interval that the notification should stay on screen before self-dismissing
-  public var autoCloseTimeInterval: NSTimeInterval = 3
+  open var autoCloseTimeInterval: TimeInterval = 3
   
   /// Force the notification to perform it's action
-  public func invokeAction() {
+  open func invokeAction() {
     if action != nil {
       action!(self)
     }

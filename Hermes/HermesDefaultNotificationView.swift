@@ -1,23 +1,23 @@
 import UIKit
 
 extension UIImageView {
-  func h_setImage(url url: NSURL) {
+  func h_setImage(url: URL) {
     // Using NSURLSession API to fetch image
     // TODO: maybe change NSURLConfiguration to add things like timeouts and cellular configuration
-    let configuration = NSURLSessionConfiguration.defaultSessionConfiguration()
-    let session = NSURLSession(configuration: configuration)
+    let configuration = URLSessionConfiguration.default
+    let session = URLSession(configuration: configuration)
     
     // NSURLRequest Object
-    let request = NSURLRequest(URL: url)
+    let request = URLRequest(url: url)
     
-    let dataTask = session.dataTaskWithRequest(request, completionHandler: { (data: NSData?, response: NSURLResponse?, error: NSError?) -> Void in
+    let dataTask = session.dataTask(with: request, completionHandler: { (data: Data?, response: URLResponse?, error: NSError?) -> Void in
       if error == nil {
         // Set whatever image attribute to the returned data
         self.image = UIImage(data: data!)
       } else {
         print(error)
       }
-    })
+    } as! (Data?, URLResponse?, Error?) -> Void)
     
     // Start the data task
     dataTask.resume()
@@ -32,21 +32,21 @@ class HermesDefaultNotificationView: HermesNotificationView {
       colorView.backgroundColor = notification?.color
       imageView.image = notification?.image
       if let imageURL  = notification?.imageURL {
-        imageView.h_setImage(url: imageURL)
+        imageView.h_setImage(url: imageURL as URL)
       }
       layoutSubviews()
     }
   }
   
-  var style: HermesStyle = .Dark {
+  var style: HermesStyle = .dark {
     didSet {
-      textLabel.textColor = style == .Light ? .darkGrayColor() : .whiteColor()
+      textLabel.textColor = style == .light ? .darkGray : .white
     }
   }
   
-  private var imageView = UIImageView()
-  private var textLabel = UILabel()
-  private var colorView = UIView()
+  fileprivate var imageView = UIImageView()
+  fileprivate var textLabel = UILabel()
+  fileprivate var colorView = UIView()
   
   required init?(coder aDecoder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
@@ -54,10 +54,10 @@ class HermesDefaultNotificationView: HermesNotificationView {
   
   override init(frame: CGRect) {
     super.init(frame: frame)
-    imageView.contentMode = .Center
+    imageView.contentMode = .center
     imageView.clipsToBounds = true
     imageView.layer.cornerRadius = 5
-    textLabel.textColor = .whiteColor()
+    textLabel.textColor = .white
     textLabel.font = UIFont(name: "HelveticaNeue", size: 14)
     textLabel.numberOfLines = 3
     addSubview(imageView)
@@ -66,7 +66,7 @@ class HermesDefaultNotificationView: HermesNotificationView {
   }
   
   convenience init(notification: HermesNotification) {
-    self.init(frame: CGRectZero)
+    self.init(frame: CGRect.zero)
     self.notification = notification
   }
   
@@ -74,26 +74,24 @@ class HermesDefaultNotificationView: HermesNotificationView {
     let margin: CGFloat = 4
     let colorHeight: CGFloat = 4
     
-    imageView.hidden = notification?.image == nil && notification?.imageURL == nil
-    imageView.frame = CGRectMake(margin * 2, 0, 34, 34)
-    imageView.center.y = CGRectGetMidY(bounds) - colorHeight
+    imageView.isHidden = notification?.image == nil && notification?.imageURL == nil
+    imageView.frame = CGRect(x: margin * 2, y: 0, width: 34, height: 34)
+    imageView.center.y = bounds.midY - colorHeight
     
-    var leftRect = CGRect()
-    var rightRect = CGRect()
-    CGRectDivide(bounds, &leftRect, &rightRect, CGRectGetMaxX(imageView.frame), .MinXEdge)
+    let (_, rightRect) = bounds.divided(atDistance: imageView.frame.maxX, from: .minXEdge)
   
     let space: CGFloat = 20
-    let constrainedSize = CGRectInset(rightRect, (space + margin) * 0.5, 0).size
+    let constrainedSize = rightRect.insetBy(dx: (space + margin) * 0.5, dy: 0).size
     
     textLabel.frame.size = textLabel.sizeThatFits(constrainedSize)
-    textLabel.frame.origin.x = CGRectGetMaxX(imageView.frame) + space
-    textLabel.center.y = CGRectGetMidY(bounds) - colorHeight
+    textLabel.frame.origin.x = imageView.frame.maxX + space
+    textLabel.center.y = bounds.midY - colorHeight
     
-    colorView.frame = CGRectMake(margin, bounds.size.height - colorHeight, bounds.size.width - 2 * margin, colorHeight)
+    colorView.frame = CGRect(x: margin, y: bounds.size.height - colorHeight, width: bounds.size.width - 2 * margin, height: colorHeight)
     
     // This centers the text across the whole view, unless that would cause it to block the imageView
-    textLabel.center.x = CGRectGetMidX(bounds)
-    let leftBound = CGRectGetMaxX(imageView.frame) + space
+    textLabel.center.x = bounds.midX
+    let leftBound = imageView.frame.maxX + space
     if textLabel.frame.origin.x < leftBound {
       textLabel.frame.origin.x = leftBound
     }

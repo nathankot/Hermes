@@ -1,8 +1,8 @@
 import UIKit
 
 protocol HermesBulletinViewDelegate: class {
-  func bulletinViewDidClose(bulletinView: HermesBulletinView, explicit: Bool)
-  func bulletinViewNotificationViewForNotification(notification: HermesNotification) -> HermesNotificationView?
+  func bulletinViewDidClose(_ bulletinView: HermesBulletinView, explicit: Bool)
+  func bulletinViewNotificationViewForNotification(_ notification: HermesNotification) -> HermesNotificationView?
 }
 
 let kMargin: CGFloat = 8
@@ -22,7 +22,7 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
   var backgroundView: UIVisualEffectView?
   
   var currentPage: Int = 0
-  var timer: NSTimer?
+  var timer: Timer?
   
   var notifications = [HermesNotification]() {
     didSet {
@@ -34,20 +34,20 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
   }
   
   var tabView = UIView()
-  var style: HermesStyle = .Dark {
+  var style: HermesStyle = .dark {
     didSet {
       switch style {
-      case .Light:
-        blurEffectStyle = .ExtraLight
-      case .Dark:
-        blurEffectStyle = .Dark
+      case .light:
+        blurEffectStyle = .extraLight
+      case .dark:
+        blurEffectStyle = .dark
       }
     }
   }
-  private var blurEffectStyle: UIBlurEffectStyle = .Dark {
+  fileprivate var blurEffectStyle: UIBlurEffectStyle = .dark {
     didSet {
       backgroundView?.removeFromSuperview()
-      if blurEffectStyle == .Dark {
+      if blurEffectStyle == .dark {
         tabView.backgroundColor = UIColor(white: 1, alpha: 0.6)
       } else {
         tabView.backgroundColor = UIColor(white: 0, alpha: 0.1)
@@ -63,7 +63,7 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
   override init(frame: CGRect) {
     super.init(frame: frame)
     
-    let panGestureRecognizer = UIPanGestureRecognizer(target: self, action: "pan:")
+    let panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(HermesBulletinView.pan(_:)))
     addGestureRecognizer(panGestureRecognizer)
     
     remakeBackgroundView()
@@ -75,16 +75,16 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
     addSubview(tabView)
   }
   
-  private func remakeBackgroundView() {
+  fileprivate func remakeBackgroundView() {
     let blurEffect = UIBlurEffect(style: blurEffectStyle)
     backgroundView = UIVisualEffectView(effect: blurEffect)
-    backgroundView?.autoresizingMask = [UIViewAutoresizing.FlexibleWidth, UIViewAutoresizing.FlexibleTopMargin]
-    insertSubview(backgroundView!, atIndex: 0)
+    backgroundView?.autoresizingMask = [UIViewAutoresizing.flexibleWidth, UIViewAutoresizing.flexibleTopMargin]
+    insertSubview(backgroundView!, at: 0)
   }
   
-  func pan(gesture: UIPanGestureRecognizer) {
+  func pan(_ gesture: UIPanGestureRecognizer) {
     timer?.invalidate()
-    var pan = gesture.translationInView(gesture.view!.superview!)
+    var pan = gesture.translation(in: gesture.view!.superview!)
     let startFrame = bulletinFrameInView(gesture.view!.superview!)
     var frame = startFrame
     
@@ -101,9 +101,9 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
     frame.origin.y += dy
     self.frame = frame
     
-    if gesture.state == .Ended {
+    if gesture.state == .ended {
       let layoutViewFrame = layoutViewFrameInView(gesture.view!.superview!)
-      let velocity = gesture.velocityInView(gesture.view!.superview!)
+      let velocity = gesture.velocity(in: gesture.view!.superview!)
       if dy > layoutViewFrame.size.height * 0.5 || velocity.y > 500{
         close(explicit: true)
       } else {
@@ -115,7 +115,7 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
   func animateIn() {
     let bulletinFrame = bulletinFrameInView(self.superview!)
     
-    UIView.animateWithDuration(0.4, delay: 0.0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0, options: UIViewAnimationOptions.BeginFromCurrentState, animations: {
+    UIView.animate(withDuration: 0.4, delay: 0.0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0, options: UIViewAnimationOptions.beginFromCurrentState, animations: {
       self.frame = bulletinFrame
       }, completion: { completed in
         self.scheduleCloseTimer()
@@ -123,9 +123,9 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
     
   }
   
-  func show(view: UIView = UIApplication.sharedApplication().windows[0], animated: Bool = true) {
+  func show(_ view: UIView = UIApplication.shared.windows[0], animated: Bool = true) {
     // Add to main queue in case the view loaded but wasn't added to the window yet.  This seems to happen in my storyboard test app
-    dispatch_async(dispatch_get_main_queue(),{
+    DispatchQueue.main.async(execute: {
       view.addSubview(self)
       
       let bulletinFrame = self.bulletinFrameInView(self.superview!)
@@ -139,32 +139,32 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
   
   func scheduleCloseTimer() {
     if currentNotification.autoClose {
-      timer = NSTimer.scheduledTimerWithTimeInterval(currentNotification.autoCloseTimeInterval, target: self, selector: "nextPageOrClose", userInfo: nil, repeats: false)
+      timer = Timer.scheduledTimer(timeInterval: currentNotification.autoCloseTimeInterval, target: self, selector: #selector(HermesBulletinView.nextPageOrClose), userInfo: nil, repeats: false)
     }
   }
   
-  func close(explicit explicit: Bool) {
+  func close(explicit: Bool) {
     timer?.invalidate()
     
-    userInteractionEnabled = false
+    isUserInteractionEnabled = false
     
     let startFrame = bulletinFrameInView(superview!)
     var offScreenFrame = startFrame
     offScreenFrame.origin.y = superview!.bounds.size.height
     
-    UIView.animateWithDuration(0.2, delay: 0.0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0, options: UIViewAnimationOptions.BeginFromCurrentState, animations: {
+    UIView.animate(withDuration: 0.2, delay: 0.0, usingSpringWithDamping: 0.8, initialSpringVelocity: 0, options: UIViewAnimationOptions.beginFromCurrentState, animations: {
       self.frame = offScreenFrame
       }, completion: { completed in
         self.removeFromSuperview()
-        self.userInteractionEnabled = true
+        self.isUserInteractionEnabled = true
         self.delegate?.bulletinViewDidClose(self, explicit: explicit)
     })
   }
   
-  func contentOffsetForPage(page: Int) -> CGPoint {
+  func contentOffsetForPage(_ page: Int) -> CGPoint {
     let boundsWidth = scrollView.bounds.size.width
     let pageWidth = boundsWidth - 2 * kMargin
-    var contentOffset = CGPointMake(pageWidth * CGFloat(page) - scrollView.contentInset.left, scrollView.contentOffset.y)
+    var contentOffset = CGPoint(x: pageWidth * CGFloat(page) - scrollView.contentInset.left, y: scrollView.contentOffset.y)
     if contentOffset.x < -scrollView.contentInset.left {
       contentOffset.x = -scrollView.contentInset.left
     } else if contentOffset.x + scrollView.contentInset.right + scrollView.bounds.size.width > scrollView.contentSize.width {
@@ -192,19 +192,19 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
     }
   }
   
-  func bulletinFrameInView(view: UIView) -> CGRect {
-    var bulletinFrame = CGRectMake(0, 0, view.bounds.size.width, view.bounds.size.height * 0.5)
+  func bulletinFrameInView(_ view: UIView) -> CGRect {
+    var bulletinFrame = CGRect(x: 0, y: 0, width: view.bounds.size.width, height: view.bounds.size.height * 0.5)
     let notificationViewFrame = layoutViewFrameInView(view)
     
-    bulletinFrame.origin = CGPointMake(0, view.bounds.size.height - notificationViewFrame.size.height)
+    bulletinFrame.origin = CGPoint(x: 0, y: view.bounds.size.height - notificationViewFrame.size.height)
     return bulletinFrame
   }
   
-  func layoutViewFrameInView(view: UIView) -> CGRect {
-    return CGRectMake(0, 0, view.bounds.size.width, kNotificationHeight)
+  func layoutViewFrameInView(_ view: UIView) -> CGRect {
+    return CGRect(x: 0, y: 0, width: view.bounds.size.width, height: kNotificationHeight)
   }
   
-  func notificationViewFrameInView(view: UIView) -> CGRect {
+  func notificationViewFrameInView(_ view: UIView) -> CGRect {
     var frame = layoutViewFrameInView(view)
     frame.origin.x += kMargin
     frame.size.width -= kMargin * 2
@@ -221,7 +221,7 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
     
     var notificationViewFrame = notificationViewFrameInView(superview!)
     
-    for (i, notification) in notifications.enumerate() {
+    for (i, notification) in notifications.enumerated() {
       notificationViewFrame.origin.x = CGFloat(i) * notificationViewFrame.size.width
       
       var notificationView = delegate?.bulletinViewNotificationViewForNotification(notification)
@@ -233,17 +233,17 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
       notificationView!.notification = notification
       
       if notification.action != nil {
-        let tapGesture = UITapGestureRecognizer(target: self, action: "action:")
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(HermesBulletinView.action(_:)))
         notificationView?.addGestureRecognizer(tapGesture)
       }
       
       scrollView.addSubview(notificationView!)
     }
     
-    scrollView.contentSize = CGSizeMake(CGRectGetMaxX(notificationViewFrame), scrollView.bounds.size.height)
+    scrollView.contentSize = CGSize(width: notificationViewFrame.maxX, height: scrollView.bounds.size.height)
   }
   
-  func action(tapGesture: UITapGestureRecognizer) {
+  func action(_ tapGesture: UITapGestureRecognizer) {
     let notificationView = tapGesture.view as! HermesNotificationView
     if let notification = notificationView.notification {
       notification.invokeAction()
@@ -251,58 +251,58 @@ class HermesBulletinView: UIView, UIScrollViewDelegate, HermesNotificationDelega
   }
   
   override func layoutSubviews() {
-    backgroundView?.frame = CGRectMake(0, 0, bounds.size.width, superview!.bounds.size.height)
+    backgroundView?.frame = CGRect(x: 0, y: 0, width: bounds.size.width, height: superview!.bounds.size.height)
     
     scrollView.frame = bounds
     
-    let tabViewFrame = CGRectMake(0, 9, 32, 5)
+    let tabViewFrame = CGRect(x: 0, y: 9, width: 32, height: 5)
     tabView.frame = tabViewFrame
-    tabView.center = CGPointMake(bounds.size.width / 2, tabView.center.y)
+    tabView.center = CGPoint(x: bounds.size.width / 2, y: tabView.center.y)
     
     layoutNotifications()
   }
   
-  func pageFromOffset(offset: CGPoint) -> Int {
+  func pageFromOffset(_ offset: CGPoint) -> Int {
     let boundsWidth = scrollView.bounds.size.width
     let pageWidth = boundsWidth
     return Int((offset.x + pageWidth * 0.5) / pageWidth)
   }
   
   // MARK: - Overrides
-  override func pointInside(point: CGPoint, withEvent event: UIEvent?) -> Bool {
+  override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
     var rect = bounds
     rect.origin.y -= 44
     rect.size.height += 44
-    return CGRectContainsPoint(rect, point)
+    return rect.contains(point)
   }
   
   // MARK: - UIScrollViewDelegate
-  func scrollViewWillBeginDragging(scrollView: UIScrollView) {
+  func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
     timer?.invalidate()
     currentPage = pageFromOffset(scrollView.contentOffset)
   }
   
-  func scrollViewWillEndDragging(scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+  func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
     let currentPage = self.currentPage
-    let targetOffset = targetContentOffset.memory
+    let targetOffset = targetContentOffset.pointee
     let targetPage = pageFromOffset(targetOffset)
     
     var newPage = currentPage
     if targetPage > currentPage {
-      newPage++
+      newPage += 1
     } else if targetPage < currentPage {
-      newPage--
+      newPage -= 1
     }
     
-    targetContentOffset.initialize(self.contentOffsetForPage(newPage))
+    targetContentOffset.initialize(to: self.contentOffsetForPage(newPage))
   }
   
-  func scrollViewDidEndDecelerating(scrollView: UIScrollView) {
+  func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
     scheduleCloseTimer()
   }
   
   // MARK: - HermesNotificationDelegate
-  func notificationDidChangeAutoClose(notification: HermesNotification) {
+  func notificationDidChangeAutoClose(_ notification: HermesNotification) {
     if notification == currentNotification {
       if notification.autoClose {
         scheduleCloseTimer()
