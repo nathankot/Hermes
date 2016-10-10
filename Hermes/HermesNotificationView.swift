@@ -1,7 +1,7 @@
 import UIKit
 
-public class HermesNotificationView: UIView {
-  public var notification: HermesNotification?
+open class HermesNotificationView: UIView {
+  open var notification: HermesNotification?
   let contentView = UIView()
     
   required public init(coder aDecoder: NSCoder) {
@@ -13,8 +13,8 @@ public class HermesNotificationView: UIView {
     addSubview(contentView)
   }
   
-  public override func layoutSubviews() {
+  open override func layoutSubviews() {
     let margin: CGFloat = 8
-    contentView.frame = CGRectMake(margin, 0, bounds.size.width - 2 * margin, bounds.size.height - margin)
+    contentView.frame = CGRect(x: margin, y: 0, width: bounds.size.width - 2 * margin, height: bounds.size.height - margin)
   }
 }

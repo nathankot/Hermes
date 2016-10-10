@@ -7,14 +7,14 @@ import AVFoundation
   :param: notification the notification being made
   :returns: the notification view, or nil to use HermesDefaultNotificationView
   */
-  optional func hermesNotificationViewForNotification(hermes hermes: Hermes, notification: HermesNotification) -> HermesNotificationView?
-    
+  @objc optional func hermesNotificationViewForNotification(hermes: Hermes, notification: HermesNotification) -> HermesNotificationView?
+
   /**
   :param: hermes the Hermes instance
   :param: explicit is true if the user closed the bulletin with their finger, instead of relying on autoclose
   :param: notification the notification that was showing when Hermes was closed
   */
-  optional func hermesDidClose(hermes: Hermes, explicit: Bool, notification: HermesNotification)
+  @objc optional func hermesDidClose(_ hermes: Hermes, explicit: Bool, notification: HermesNotification)
 }
 
 /**
@@ -33,135 +33,135 @@ bugs and still needs to be handled.
 */
 
 @objc public enum HermesStyle : Int {
-    case Dark, Light
+    case dark, light
 }
 
-public class Hermes: NSObject, HermesBulletinViewDelegate {
+open class Hermes: NSObject, HermesBulletinViewDelegate {
   // MARK: - Public variables
   // MARK: - Singleton
   /**
   You typically will never need to use more than one instance of Hermes
   */
-  public static let sharedInstance = Hermes()
-  public var style: HermesStyle = .Dark
-    
+  open static let sharedInstance = Hermes()
+  open var style: HermesStyle = .dark
+
   // MARK: -
-  weak public var delegate: HermesDelegate?
-    
+  weak open var delegate: HermesDelegate?
+
   // MARK: - private variables
-  private var bulletinView: HermesBulletinView?
-  private var notifications = [HermesNotification]()
-  
+  fileprivate var bulletinView: HermesBulletinView?
+  fileprivate var notifications = [HermesNotification]()
+
   var audioPlayer: AVAudioPlayer?
 
   /**
   When Hermes is waiting, he will collect all of your notifications. Use wait() and go() to tell Hermes when to collect and when to deliver notifications
   */
-  private var waiting = false {
+  fileprivate var waiting = false {
     didSet {
       if !waiting {
-        showNotifications() 
+        showNotifications()
       }
     }
   }
-  
+
   // MARK: - Public methods
-  
+
   /**
   Give Hermes one notification to post. If waiting == false, you'll see this notification right away
-  
+
   :param: notification The notification you want Hermes to post
   */
-  public func postNotification(notification: HermesNotification) {
+  open func postNotification(_ notification: HermesNotification) {
     postNotifications([notification])
   }
-  
+
   /**
   Give Hermes an array of notifications to post. If waiting == false, you'll see these notifications right away
-  
+
   :param: notifications The notifications you want Hermes to post
   */
-  public func postNotifications(notifications: [HermesNotification]) {
+  open func postNotifications(_ notifications: [HermesNotification]) {
     self.notifications += notifications
-    
+
     if let firstNotification = self.notifications.first {
       if firstNotification.soundPath != nil {
         prepareSound(path: firstNotification.soundPath!)
       }
     }
-    
+
     showNotifications()
   }
-  
+
   /**
   Tell Hermes to wait and you can queue up multiple notifications
   */
-  public func wait() {
+  open func wait() {
     waiting = true
   }
-  
+
   /**
   Done queuing up those notifications? Tell Hermes to go!
   */
-  public func go() {
+  open func go() {
     waiting = false
     showNotifications()
   }
-  
-  public func close() {
+
+  open func close() {
     bulletinView?.close(explicit: false)
   }
-  
-  public func containsNotification(notification: HermesNotification) -> Bool{
+
+  open func containsNotification(_ notification: HermesNotification) -> Bool{
     if let bulletinView = self.bulletinView {
         return bulletinView.notifications.contains(notification)
     }
     return false
   }
-    
+
   // MARK: - private methods
-  
+
   /**
-  This method will attempt to show all currently queued up notifications.  If Hermes has waiting set to true, 
+  This method will attempt to show all currently queued up notifications.  If Hermes has waiting set to true,
   or if there are not notifications, this method will do nothing
   */
-  private func showNotifications() {
+  fileprivate func showNotifications() {
     if waiting || notifications.count == 0 || bulletinView != nil {
       return
     }
-    
+
     bulletinView = HermesBulletinView()
-    
+
     switch style {
-    case .Dark:
-        bulletinView!.style = .Dark
-    case .Light:
-        bulletinView!.style = .Light
+    case .dark:
+        bulletinView!.style = .dark
+    case .light:
+        bulletinView!.style = .light
     }
     bulletinView!.delegate = self
     bulletinView!.notifications = notifications
     bulletinView!.show()
     audioPlayer?.play()
-    
-    notifications.removeAll(keepCapacity: true) 
+
+    notifications.removeAll(keepingCapacity: true)
   }
 
   // Initial setup
-  func prepareSound(path path: String) {
-    let sound = NSURL(fileURLWithPath: path)
-    audioPlayer = try! AVAudioPlayer(contentsOfURL: sound)
+  func prepareSound(path: String) {
+    let sound = URL(fileURLWithPath: path)
+    audioPlayer = try? AVAudioPlayer(contentsOf: sound)
     audioPlayer!.prepareToPlay()
   }
-  
+
   // MARK: - HermesBulletinViewDelegate
-  
-  func bulletinViewDidClose(bulletinView: HermesBulletinView, explicit: Bool) {
+
+  func bulletinViewDidClose(_ bulletinView: HermesBulletinView, explicit: Bool) {
     delegate?.hermesDidClose?(self, explicit: explicit, notification: bulletinView.currentNotification)
     self.bulletinView = nil
     showNotifications()
   }
-  
-  func bulletinViewNotificationViewForNotification(notification: HermesNotification) -> HermesNotificationView? {
+
+  func bulletinViewNotificationViewForNotification(_ notification: HermesNotification) -> HermesNotificationView? {
     return delegate?.hermesNotificationViewForNotification?(hermes: self, notification: notification)
   }
 }
