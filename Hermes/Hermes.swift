@@ -42,7 +42,7 @@ open class Hermes: NSObject, HermesBulletinViewDelegate {
   /**
   You typically will never need to use more than one instance of Hermes
   */
-  open static let sharedInstance = Hermes()
+  public static let sharedInstance = Hermes()
   open var style: HermesStyle = .dark
     
   // MARK: -

@@ -26,3 +26,5 @@ DerivedData
 # Pods/
 Carthage
 *.xcscmblueprint
+
+.DS_Store
